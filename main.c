@@ -50,18 +50,17 @@ int main() {
 	InitWindow(START_WIDTH, START_HEIGHT, APP_NAME);
 	InitAudioDevice();
 	SetTargetFPS(144);
-	GuiLoadStyle("style_def.rgs");
-	Font fontBm = LoadFont("UbuntuSansNerdFont-Bold.ttf");
+	GuiLoadStyle("assets/style_def.rgs");
+	Font fontBm = LoadFont("assets/UbuntuSansNerdFont-Bold.ttf");
 
 	FilePathList files = LoadDirectoryFiles("./songs");
-	Music current_song; 
+	Music current_song ={0}; 
 
 	float current_song_len = 0;
 	float current_song_pos = 0;
-	char current_song_len_str[16];
-	char current_song_pos_str[16];
-	timestamp_t cur_timestamp;
-	timestamp_t end_timestamp;
+	timestamp_t cur_timestamp = {.hours = 0, .mins = 0, .secs = 0};
+	timestamp_t end_timestamp = {.hours = 0, .mins = 0, .secs = 0};
+
 	timestamp_set(&cur_timestamp, 0.f);
 	timestamp_set(&end_timestamp, 0.f);
 	SetMasterVolume(0.05f);
@@ -97,8 +96,6 @@ int main() {
 		char timestamp_end_str[16];
 		timestamp_get(&cur_timestamp, timestamp_cur_str);
 		timestamp_get(&end_timestamp, timestamp_end_str);
-		to_stringf(current_song_len_str, current_song_len);	
-		to_stringf(current_song_pos_str, current_song_pos);	
 		GuiProgressBar((Rectangle) {(int) (width / 4), height - 60, (int) (width / 2), 20},
 				timestamp_cur_str, timestamp_end_str, &current_song_pos, 0, current_song_len);
 
