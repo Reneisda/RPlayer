@@ -8,7 +8,8 @@
 #define APP_NAME "Player"
 #define START_WIDTH 1200
 #define START_HEIGHT 800
-
+#define MIN_WIDTH 800
+#define MIN_HEIGHT 600
 
 typedef struct timestamp {
 	uint8_t hours;
@@ -46,12 +47,13 @@ char* to_stringf(char* buff, float f) {
 int main() {
 	int height, width;
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-	SetWindowMinSize(600, 800);
+	SetWindowMinSize(MIN_WIDTH, MIN_HEIGHT);
 	InitWindow(START_WIDTH, START_HEIGHT, APP_NAME);
 	InitAudioDevice();
 	SetTargetFPS(144);
 	GuiLoadStyle("assets/style_def.rgs");
-	Font fontBm = LoadFont("assets/UbuntuSansNerdFont-Bold.ttf");
+	Font fontBm = LoadFontEx("assets/UbuntuSansNerdFont-Bold.ttf", 36, 0, 250);
+	GuiSetFont(fontBm);
 
 	FilePathList files = LoadDirectoryFiles("./songs");
 	Music current_song ={0}; 
@@ -69,10 +71,16 @@ int main() {
 		BeginDrawing();
 		width = GetScreenWidth();
 		height = GetScreenHeight();
+		if (width < MIN_WIDTH)
+			width = MIN_WIDTH;
+		if (height < MIN_HEIGHT)
+			height = MIN_HEIGHT;
+		
+		SetWindowSize(width, height);
 
 		ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
-		GuiPanel((Rectangle) {0, 0, 260, height - 120}, "Songs");
-
+		GuiPanel((Rectangle) {0, 0, 260, height - 120}, "Playlists");					// sidepanel
+		GuiPanel((Rectangle) {270, 0, (width - 270 * 2), height - 120}, "Songs");	
 		for (int i = 0; i < files.count; ++i) 
 			if (GuiButton((Rectangle) {4, 40 + i * 45, 250 , 40} , get_file_name(files.paths[i]))) {
 				current_song = LoadMusicStream(files.paths[i]);
