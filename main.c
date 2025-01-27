@@ -46,23 +46,26 @@ char* to_stringf(char* buff, float f) {
 
 int main() {
 	int height, width;
+	int refresh_rate = GetMonitorRefreshRate(GetCurrentMonitor());
+	char search[256];
+	sprintf(search, "%s", "search: ");
+	printf("Rendering at %dfps\n", refresh_rate);
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 	SetWindowMinSize(MIN_WIDTH, MIN_HEIGHT);
 	InitWindow(START_WIDTH, START_HEIGHT, APP_NAME);
 	InitAudioDevice();
-	SetTargetFPS(144);
+	SetTargetFPS(refresh_rate);
 	GuiLoadStyle("assets/style_def.rgs");
 	Font fontBm = LoadFontEx("assets/UbuntuSansNerdFont-Bold.ttf", 36, 0, 250);
 	GuiSetFont(fontBm);
-
 	FilePathList files = LoadDirectoryFiles("./songs");
-	Music current_song ={0}; 
+	Music current_song = {0}; 
 
 	float current_song_len = 0;
 	float current_song_pos = 0;
 	timestamp_t cur_timestamp = {.hours = 0, .mins = 0, .secs = 0};
 	timestamp_t end_timestamp = {.hours = 0, .mins = 0, .secs = 0};
-
+	
 	timestamp_set(&cur_timestamp, 0.f);
 	timestamp_set(&end_timestamp, 0.f);
 	SetMasterVolume(0.05f);
@@ -71,18 +74,20 @@ int main() {
 		BeginDrawing();
 		width = GetScreenWidth();
 		height = GetScreenHeight();
-		if (width < MIN_WIDTH)
+		if (width < MIN_WIDTH)															// Enforce Minimum Window size
 			width = MIN_WIDTH;
 		if (height < MIN_HEIGHT)
 			height = MIN_HEIGHT;
 		
 		SetWindowSize(width, height);
-
+		
 		ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
-		GuiPanel((Rectangle) {0, 0, 260, height - 120}, "Playlists");					// sidepanel
-		GuiPanel((Rectangle) {270, 0, (width - 270 * 2), height - 120}, "Songs");	
+		GuiPanel((Rectangle) {0, 0, width, 70}, "RPlayer");								// TopPanel
+		GuiPanel((Rectangle) {0, 80, 260, height - 190}, "Playlists");					// Sidepanel
+		GuiPanel((Rectangle) {270, 80, (width - 270 * 2), height - 190}, "Songs");		// SongPanel
+		GuiTextBox((Rectangle) {270, 30, width - 270 * 2, 25}, search, 256, true);
 		for (int i = 0; i < files.count; ++i) 
-			if (GuiButton((Rectangle) {4, 40 + i * 45, 250 , 40} , get_file_name(files.paths[i]))) {
+			if (GuiButton((Rectangle) {280, 110 + i * 45, width - 280 * 2 , 40} , get_file_name(files.paths[i]))) {
 				current_song = LoadMusicStream(files.paths[i]);
 				PlayMusicStream(current_song);
 				current_song_len = GetMusicTimeLength(current_song);
