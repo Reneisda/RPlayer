@@ -21,7 +21,7 @@ void timestamp_set(timestamp_t* t, float f) {
 	uint32_t i = (uint32_t) f;
 	t->secs = 	i % 60;
 	t->mins = 	i / 60;
-	t->hours = 	i / 360;
+	t->hours = 	i / 3600;
 }
 
 void timestamp_get(timestamp_t* t, char* time) {
@@ -68,6 +68,8 @@ int main() {
 	timestamp_set(&cur_timestamp, 0.f);
 	timestamp_set(&end_timestamp, 0.f);
 	SetMasterVolume(0.05f);
+	int scroll = 0; 
+	Rectangle songs_rect = {270, 80, (width - 270 * 2), height - 190};
 
 	while (!WindowShouldClose()) {
 		BeginDrawing();
@@ -79,22 +81,27 @@ int main() {
 			height = MIN_HEIGHT;
 		
 		SetWindowSize(width, height);
-		
+
+
 		ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
-		GuiPanel((Rectangle) {0, 0, width, 70}, "RPlayer");								// TopPanel
-		GuiPanel((Rectangle) {0, 80, 260, height - 190}, "Playlists");					// Sidepanel
+		GuiPanel((Rectangle) {0, 0, width, 70}, "RPlayer");									// TopPanel
+		GuiPanel((Rectangle) {0, 80, 260, height - 190}, "Playlists");						// Sidepanel
 		GuiPanel((Rectangle) {270, 80, (width - 270 * 2), height - 190}, "Songs");		// SongPanel
-		GuiTextBox((Rectangle) {270, 30, width - 270 * 2, 25}, "Search: ", 10, false);		// SongPanel
-		GuiTextBox((Rectangle) {270, 30, width - 270 * 2, 25}, search, 256, true);
+		GuiTextBox((Rectangle) {270, 30, width - 270 * 2, 25}, search, 256, true);			// SearchBar
+		GuiScrollBar(songs_rect, scroll, 0, 1000);
 		DrawText("Search: ", 180, 34, 20, GetColor(0xFFFFFFFF));
-		for (int i = 0; i < files.count; ++i) 
+
+		for (int i = 0; i < files.count; ++i) {
+			if (110 + i * 45 + 40 > height - 120)
+				break;
+
 			if (GuiButton((Rectangle) {280, 110 + i * 45, width - 280 * 2 , 40} , get_file_name(files.paths[i]))) {
 				current_song = LoadMusicStream(files.paths[i]);
 				PlayMusicStream(current_song);
 				current_song_len = GetMusicTimeLength(current_song);
 				timestamp_set(&end_timestamp, current_song_len);
 			}
-		
+		}
 		if (IsKeyPressed(KEY_SPACE)) {
 			if (IsMusicStreamPlaying(current_song)) {
 				PauseMusicStream(current_song);
@@ -110,6 +117,7 @@ int main() {
 		char timestamp_end_str[16];
 		timestamp_get(&cur_timestamp, timestamp_cur_str);
 		timestamp_get(&end_timestamp, timestamp_end_str);
+		
 		GuiProgressBar((Rectangle) {(int) (width / 4), height - 60, (int) (width / 2), 20},
 				timestamp_cur_str, timestamp_end_str, &current_song_pos, 0, current_song_len);
 
