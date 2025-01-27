@@ -86,7 +86,7 @@ int main() {
 		ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 		GuiPanel((Rectangle) {0, 0, width, 70}, "RPlayer");									// TopPanel
 		GuiPanel((Rectangle) {0, 80, 260, height - 190}, "Playlists");						// Sidepanel
-		GuiPanel((Rectangle) {270, 80, (width - 270 * 2), height - 190}, "Songs");		// SongPanel
+		//GuiPanel((Rectangle) {270, 80, (width - 270 * 2), height - 190}, "Songs");		// SongPanel
 		GuiTextBox((Rectangle) {270, 30, width - 270 * 2, 25}, search, 256, true);			// SearchBar
 		GuiScrollBar(songs_rect, scroll, 0, 1000);
 		DrawText("Search: ", 180, 34, 20, GetColor(0xFFFFFFFF));
