@@ -7,7 +7,7 @@
 
 #define APP_NAME "Player"
 #define START_WIDTH 1200
-#define START_HEIGHT 800
+#define START_HEIGHT 680
 #define MIN_WIDTH 800
 #define MIN_HEIGHT 600
 
@@ -48,7 +48,6 @@ int main() {
 	int height, width;
 	int refresh_rate = GetMonitorRefreshRate(GetCurrentMonitor());
 	char search[256];
-	sprintf(search, "%s", "search: ");
 	printf("Rendering at %dfps\n", refresh_rate);
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 	SetWindowMinSize(MIN_WIDTH, MIN_HEIGHT);
@@ -85,7 +84,9 @@ int main() {
 		GuiPanel((Rectangle) {0, 0, width, 70}, "RPlayer");								// TopPanel
 		GuiPanel((Rectangle) {0, 80, 260, height - 190}, "Playlists");					// Sidepanel
 		GuiPanel((Rectangle) {270, 80, (width - 270 * 2), height - 190}, "Songs");		// SongPanel
+		GuiTextBox((Rectangle) {270, 30, width - 270 * 2, 25}, "Search: ", 10, false);		// SongPanel
 		GuiTextBox((Rectangle) {270, 30, width - 270 * 2, 25}, search, 256, true);
+		DrawText("Search: ", 180, 34, 20, GetColor(0xFFFFFFFF));
 		for (int i = 0; i < files.count; ++i) 
 			if (GuiButton((Rectangle) {280, 110 + i * 45, width - 280 * 2 , 40} , get_file_name(files.paths[i]))) {
 				current_song = LoadMusicStream(files.paths[i]);
