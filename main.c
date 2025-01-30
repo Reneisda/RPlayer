@@ -1,7 +1,5 @@
 #include "raylib.h"
 #include <stdio.h>
-
-#define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
 #include <stdint.h>
 
@@ -47,6 +45,7 @@ char* to_stringf(char* buff, float f) {
 int main() {
 	int height, width;
 	int refresh_rate = GetMonitorRefreshRate(GetCurrentMonitor());
+	refresh_rate = refresh_rate == 0 ? 60 : refresh_rate;
 	char search[256];
 	printf("Rendering at %dfps\n", refresh_rate);
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
