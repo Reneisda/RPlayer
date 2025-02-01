@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include "raygui.h"
 #include <stdint.h>
+#include "songutils.h"
+
 
 #define APP_NAME "Player"
 #define START_WIDTH 1200
@@ -69,6 +71,12 @@ int main() {
 	SetMasterVolume(0.05f);
 	int scroll = 0; 
 	int cur_playlist_size = files.count;
+	playlist_t pl;
+	song_list_t sl;
+	read_songs(&sl);
+	load_playlist(&pl, &sl, "test");
+			
+
 	while (!WindowShouldClose()) {
 		BeginDrawing();
 		width = GetScreenWidth();
@@ -114,6 +122,8 @@ int main() {
 				ResumeMusicStream(current_song);
 			}
 		}
+
+		GuiButton((Rectangle) {5, 110, 250, 50}, pl.name);
 
 		current_song_pos = GetMusicTimePlayed(current_song);
 		timestamp_set(&cur_timestamp, current_song_pos);
