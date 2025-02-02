@@ -163,6 +163,9 @@ int main() {
 		char s_name[256 + 10];
 		cur_playlist_size = cur_pl->count;
 		for (size_t i = 0; i + scroll / 10 < cur_pl->count; ++i) {	
+			if (110 + i * 45 + 40 > height - 120)
+				break;
+
 			if (GuiButton((Rectangle) {280, 110 + i * 45, width - 280 * 2 , 40} , cur_pl->songs[i + scroll / 10]->name)) {
 				strcpy(s_name, "songs2/");
 				strcat(s_name, cur_pl->songs[i + scroll / 10]->id);
