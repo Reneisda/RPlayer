@@ -71,7 +71,7 @@ int main() {
 	char search[256];
 	memset(search, 0, 256);
 	printf("Rendering at %dfps\n", refresh_rate);
-	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+	SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT | FLAG_WINDOW_HIGHDPI);
 	SetWindowMinSize(MIN_WIDTH, MIN_HEIGHT);
 	InitWindow(START_WIDTH, START_HEIGHT, APP_NAME);
 	InitAudioDevice();
@@ -198,7 +198,7 @@ int main() {
 				(Rectangle) {0, 0, width, height},
 				(Vector2) {0, 0},
 				0,
-				CLITERAL(Color){255, 255, 255, 30});
+				CLITERAL(Color){255, 255, 255, 40});
 
 			
 		current_song_pos = GetMusicTimePlayed(current_song);
