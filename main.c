@@ -5,6 +5,8 @@
 #include "songutils.h"
 #include <string.h>
 #include <malloc.h>
+#include <math.h>
+
 
 #ifdef linux
 #include <unistd.h>
@@ -22,6 +24,7 @@
 #define MIN_HEIGHT 600
 #define PLAYLISTS_FLODER "playlists/"
 #define SONG_FOLDER "songs2/"
+#define THUMBNAIL_FOLDER "thumbnails/"
 
 
 typedef struct timestamp {
@@ -57,6 +60,10 @@ char* to_stringf(char* buff, float f) {
 	return buff;
 }
 
+float volume_function(float f) {
+	return powf(f, 3);
+}
+
 int main() {
 	int height, width;
 	int refresh_rate = GetMonitorRefreshRate(GetCurrentMonitor());
@@ -70,6 +77,7 @@ int main() {
 	InitAudioDevice();
 	SetTargetFPS(refresh_rate);
 	GuiLoadStyle("assets/style_def.rgs");
+	//GuiLoadStyle("assets/dark.rgs");
 	Font fontBm = LoadFontEx("assets/UbuntuSansNerdFont-Bold.ttf", 36, 0, 250);
 	GuiSetFont(fontBm);
 	FilePathList files = LoadDirectoryFiles("./songs2");
@@ -82,7 +90,9 @@ int main() {
 	
 	timestamp_set(&cur_timestamp, 0.f);
 	timestamp_set(&end_timestamp, 0.f);
-	SetMasterVolume(0.05f);
+	float volume = 0.2;
+	SetMasterVolume(volume_function(volume));
+
 	int scroll = 0; 
 	int cur_playlist_size = files.count;
 	// read all Playlists
@@ -103,7 +113,13 @@ int main() {
 	}
 	
 	cur_pl = &playlists[0];
-	
+	song_t* cur_song;
+	char def_thumb_path[256];
+	strcpy(def_thumb_path, THUMBNAIL_FOLDER);
+	strcat(def_thumb_path, cur_pl->songs[0]->id);
+	strcat(def_thumb_path, ".jpg");
+	Texture thumbnail = LoadTexture(def_thumb_path);
+
 	while (!WindowShouldClose()) {
 		BeginDrawing();
 		width = GetScreenWidth();
@@ -112,38 +128,28 @@ int main() {
 			width = MIN_WIDTH;
 		if (height < MIN_HEIGHT)
 			height = MIN_HEIGHT;
-		
+
 		SetWindowSize(width, height);
 
 
 		ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 		GuiPanel((Rectangle) {0, 0, width, 70}, "RPlayer");									// TopPanel
-		GuiPanel((Rectangle) {0, 80, 260, height - 190}, "Playlists");						// Sidepanel
+		GuiPanel((Rectangle) {0, 80, 260, height - 300}, "Playlists");						// Sidepanel
 		GuiPanel((Rectangle) {270, 80, (width - 270 * 2), height - 190}, "Songs");			// SongPanel
 		GuiTextBox((Rectangle) {270, 30, width - 270 * 2, 25}, search, 256, true);			// SearchBar
 		GuiScrollBar((Rectangle) {width - 265, 80, 10, height - 190}, scroll, 0, cur_playlist_size * 10);
-		DrawText("Search: ", 180, 34, 20, GetColor(0xFFFFFFFF));
-		float scroll_wheel = GetMouseWheelMove();
+		DrawText("Search: ", 180, 34, 20, GetColor(0xFFFFFFFF));							// Searchbar Text 
+		if (GuiSliderBar((Rectangle) {width - 200, height - 55, 160, 7}, "", "", &volume, 0, 1)) 	// VolumeBar
+			SetMasterVolume(volume_function(volume));
 		
+		
+		float scroll_wheel = GetMouseWheelMove();
 		if (scroll_wheel < 0 && (scroll / 10) < cur_pl->count - 1)						// scroll songs
 			scroll += 10;
 
 		else if (scroll_wheel > 0 && scroll >= 10)
 			scroll -= 10;
 
-		/*
-		for (int i = 0; i + scroll / 10 < files.count; ++i) {
-			if (110 + i * 45 + 40 > height - 120)
-				break;
-
-			if (GuiButton((Rectangle) {280, 110 + i * 45, width - 280 * 2 , 40} , get_file_name(files.paths[i + scroll / 10]))) {
-				current_song = LoadMusicStream(files.paths[i + scroll / 10]);
-				PlayMusicStream(current_song);
-				current_song_len = GetMusicTimeLength(current_song);
-				timestamp_set(&end_timestamp, current_song_len);
-			}
-		}
-		*/
 		if (IsKeyPressed(KEY_SPACE)) {
 			if (IsMusicStreamPlaying(current_song)) {
 				PauseMusicStream(current_song);
@@ -172,13 +178,27 @@ int main() {
 				strcat(s_name, ".wav");
 				if (access(s_name, F_OK) != 0)
 					continue;
-
+				
+				cur_song = cur_pl->songs[i + scroll / 10];
 				current_song = LoadMusicStream(s_name);
 				PlayMusicStream(current_song);
 				current_song_len = GetMusicTimeLength(current_song);
 				timestamp_set(&end_timestamp, current_song_len);
+				// render thumbnail
+				char thumbnail_path[256 + 10];
+				strcpy(thumbnail_path, THUMBNAIL_FOLDER);
+				strcat(thumbnail_path, cur_song->id);
+				strcat(thumbnail_path, ".jpg");
+				thumbnail = LoadTexture(thumbnail_path);
 			}
 		}
+		
+		DrawTexturePro(thumbnail, 
+				(Rectangle) {0, 0, thumbnail.width, thumbnail.height},
+				(Rectangle) {0, 0, width, height},
+				(Vector2) {0, 0},
+				0,
+				CLITERAL(Color){255, 255, 255, 30});
 
 		current_song_pos = GetMusicTimePlayed(current_song);
 		timestamp_set(&cur_timestamp, current_song_pos);
@@ -186,13 +206,12 @@ int main() {
 		char timestamp_end_str[16];
 		timestamp_get(&cur_timestamp, timestamp_cur_str);
 		timestamp_get(&end_timestamp, timestamp_end_str);
-		
+
 		GuiProgressBar((Rectangle) {(int) (width / 4), height - 60, (int) (width / 2), 20},
 				timestamp_cur_str, timestamp_end_str, &current_song_pos, 0, current_song_len);
 
 		UpdateMusicStream(current_song);
-		
-	EndDrawing();
+		EndDrawing();
 	}
 
 	CloseWindow();
