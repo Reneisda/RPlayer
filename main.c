@@ -6,6 +6,14 @@
 #include <string.h>
 #include <malloc.h>
 
+#ifdef linux
+#include <unistd.h>
+#endif
+#ifdef WIN32
+#include <io.h>
+#define F_OK 0
+#define access _access
+#endif
 
 #define APP_NAME "Player"
 #define START_WIDTH 1200
@@ -159,6 +167,9 @@ int main() {
 				strcpy(s_name, "songs2/");
 				strcat(s_name, cur_pl->songs[i + scroll / 10]->id);
 				strcat(s_name, ".wav");
+				if (access(s_name, F_OK) != 0)
+					continue;
+
 				current_song = LoadMusicStream(s_name);
 				PlayMusicStream(current_song);
 				current_song_len = GetMusicTimeLength(current_song);
