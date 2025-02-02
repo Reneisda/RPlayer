@@ -118,7 +118,7 @@ int main() {
 	strcpy(def_thumb_path, THUMBNAIL_FOLDER);
 	strcat(def_thumb_path, cur_pl->songs[0]->id);
 	strcat(def_thumb_path, ".jpg");
-	Texture thumbnail = LoadTexture(def_thumb_path);
+	Texture backgound_texture = LoadTexture(def_thumb_path);
 
 	while (!WindowShouldClose()) {
 		BeginDrawing();
@@ -184,31 +184,36 @@ int main() {
 				PlayMusicStream(current_song);
 				current_song_len = GetMusicTimeLength(current_song);
 				timestamp_set(&end_timestamp, current_song_len);
-				// render thumbnail
+				// render backgound_texture
 				char thumbnail_path[256 + 10];
 				strcpy(thumbnail_path, THUMBNAIL_FOLDER);
 				strcat(thumbnail_path, cur_song->id);
 				strcat(thumbnail_path, ".jpg");
-				thumbnail = LoadTexture(thumbnail_path);
+				backgound_texture = LoadTexture(thumbnail_path);
 			}
 		}
 		
-		DrawTexturePro(thumbnail, 
-				(Rectangle) {0, 0, thumbnail.width, thumbnail.height},
+		DrawTexturePro(backgound_texture, 
+				(Rectangle) {0, 0, backgound_texture.width, backgound_texture.height},
 				(Rectangle) {0, 0, width, height},
 				(Vector2) {0, 0},
 				0,
 				CLITERAL(Color){255, 255, 255, 30});
 
+			
 		current_song_pos = GetMusicTimePlayed(current_song);
 		timestamp_set(&cur_timestamp, current_song_pos);
 		char timestamp_cur_str[16];
 		char timestamp_end_str[16];
 		timestamp_get(&cur_timestamp, timestamp_cur_str);
 		timestamp_get(&end_timestamp, timestamp_end_str);
+		// Song-ProgressBar
+		if (GuiSliderBar((Rectangle) {(int) (width / 4), height - 60, (int) (width / 2), 20},
+				timestamp_cur_str, timestamp_end_str, &current_song_pos, 0, current_song_len)) {
+			
+			SeekMusicStream(current_song, current_song_pos);
+		}
 
-		GuiProgressBar((Rectangle) {(int) (width / 4), height - 60, (int) (width / 2), 20},
-				timestamp_cur_str, timestamp_end_str, &current_song_pos, 0, current_song_len);
 
 		UpdateMusicStream(current_song);
 		EndDrawing();
