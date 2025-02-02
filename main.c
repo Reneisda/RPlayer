@@ -3,6 +3,8 @@
 #include "raygui.h"
 #include <stdint.h>
 #include "songutils.h"
+#include <string.h>
+#include <malloc.h>
 
 
 #define APP_NAME "Player"
@@ -10,6 +12,9 @@
 #define START_HEIGHT 680
 #define MIN_WIDTH 800
 #define MIN_HEIGHT 600
+#define PLAYLISTS_FLODER "playlists/"
+#define SONG_FOLDER "songs2/"
+
 
 typedef struct timestamp {
 	uint8_t hours;
@@ -49,6 +54,7 @@ int main() {
 	int refresh_rate = GetMonitorRefreshRate(GetCurrentMonitor());
 	refresh_rate = refresh_rate == 0 ? 60 : refresh_rate;
 	char search[256];
+	memset(search, 0, 256);
 	printf("Rendering at %dfps\n", refresh_rate);
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 	SetWindowMinSize(MIN_WIDTH, MIN_HEIGHT);
@@ -58,7 +64,7 @@ int main() {
 	GuiLoadStyle("assets/style_def.rgs");
 	Font fontBm = LoadFontEx("assets/UbuntuSansNerdFont-Bold.ttf", 36, 0, 250);
 	GuiSetFont(fontBm);
-	FilePathList files = LoadDirectoryFiles("./songs");
+	FilePathList files = LoadDirectoryFiles("./songs2");
 	Music current_song = {0}; 
 	
 	float current_song_len = 0;
@@ -71,17 +77,30 @@ int main() {
 	SetMasterVolume(0.05f);
 	int scroll = 0; 
 	int cur_playlist_size = files.count;
-	playlist_t pl;
+	// read all Playlists
+	FilePathList playlists_files = LoadDirectoryFiles(PLAYLISTS_FLODER);
+	playlist_t* playlists;
+	uint32_t playlist_count = playlists_files.count;
+	playlists = (playlist_t*) malloc(sizeof(playlist_t) * playlist_count);
+	playlist_t all_songs;
+	playlist_t* cur_pl;
 	song_list_t sl;
 	read_songs(&sl);
-	load_playlist(&pl, &sl, "test");
-			
-
+	for (uint32_t i = 0; i < playlist_count; ++i) {
+		char playlist_name[1024];
+		strcpy(playlist_name, get_file_name(playlists_files.paths[i]));
+		playlist_name[strlen(playlist_name) - 3] = 0;
+		printf("playlistName: %s\n", playlist_name);
+		load_playlist(&playlists[i], &sl, playlist_name);
+	}
+	
+	cur_pl = &playlists[0];
+	
 	while (!WindowShouldClose()) {
 		BeginDrawing();
 		width = GetScreenWidth();
 		height = GetScreenHeight();
-		if (width < MIN_WIDTH)															// Enforce Minimum Window size
+		if (width < MIN_WIDTH)												// Enforce Minimum Window size
 			width = MIN_WIDTH;
 		if (height < MIN_HEIGHT)
 			height = MIN_HEIGHT;
@@ -98,11 +117,13 @@ int main() {
 		DrawText("Search: ", 180, 34, 20, GetColor(0xFFFFFFFF));
 		float scroll_wheel = GetMouseWheelMove();
 		
-		if (scroll_wheel < 0 && (scroll / 10) < cur_playlist_size - 1)						// scroll songs
+		if (scroll_wheel < 0 && (scroll / 10) < cur_pl->count - 1)						// scroll songs
 			scroll += 10;
+
 		else if (scroll_wheel > 0 && scroll >= 10)
 			scroll -= 10;
-	
+
+		/*
 		for (int i = 0; i + scroll / 10 < files.count; ++i) {
 			if (110 + i * 45 + 40 > height - 120)
 				break;
@@ -114,6 +135,7 @@ int main() {
 				timestamp_set(&end_timestamp, current_song_len);
 			}
 		}
+		*/
 		if (IsKeyPressed(KEY_SPACE)) {
 			if (IsMusicStreamPlaying(current_song)) {
 				PauseMusicStream(current_song);
@@ -123,7 +145,26 @@ int main() {
 			}
 		}
 
-		GuiButton((Rectangle) {5, 110, 250, 50}, pl.name);
+		for (size_t i = 0; i < playlists_files.count; ++i) {
+			if (GuiButton((Rectangle) {5, 110 + i * 50, 250, 50}, playlists[i].name)) {	
+				scroll = 0;
+				cur_pl = &playlists[i];
+			}
+		}
+
+		char s_name[256 + 10];
+		cur_playlist_size = cur_pl->count;
+		for (size_t i = 0; i + scroll / 10 < cur_pl->count; ++i) {	
+			if (GuiButton((Rectangle) {280, 110 + i * 45, width - 280 * 2 , 40} , cur_pl->songs[i + scroll / 10]->name)) {
+				strcpy(s_name, "songs2/");
+				strcat(s_name, cur_pl->songs[i + scroll / 10]->id);
+				strcat(s_name, ".wav");
+				current_song = LoadMusicStream(s_name);
+				PlayMusicStream(current_song);
+				current_song_len = GetMusicTimeLength(current_song);
+				timestamp_set(&end_timestamp, current_song_len);
+			}
+		}
 
 		current_song_pos = GetMusicTimePlayed(current_song);
 		timestamp_set(&cur_timestamp, current_song_pos);
