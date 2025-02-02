@@ -1,3 +1,4 @@
+#define RAYGUI_IMPLEMENTATION
 #include "raylib.h"
 #include <stdio.h>
 #include "raygui.h"
@@ -26,6 +27,9 @@
 #define SONG_FOLDER "songs2/"
 #define THUMBNAIL_FOLDER "thumbnails/"
 
+
+
+//int GuiScrollBar(Rectangle rec, int scroll, int min, int max);
 
 typedef struct timestamp {
 	uint8_t hours;
@@ -66,13 +70,14 @@ float volume_function(float f) {
 
 int main() {
 	int height, width;
+
 	int refresh_rate = GetMonitorRefreshRate(GetCurrentMonitor());
 	refresh_rate = refresh_rate == 0 ? 60 : refresh_rate;
 	char search[256];
 	memset(search, 0, 256);
 	printf("Rendering at %dfps\n", refresh_rate);
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT | FLAG_WINDOW_HIGHDPI);
-	SetWindowMinSize(MIN_WIDTH, MIN_HEIGHT);
+//	SetWindowMinSize(MIN_WIDTH, MIN_HEIGHT);
 	InitWindow(START_WIDTH, START_HEIGHT, APP_NAME);
 	InitAudioDevice();
 	SetTargetFPS(refresh_rate);
