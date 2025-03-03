@@ -72,19 +72,22 @@ int main() {
 	char search[256];
 	memset(search, 0, 256);
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT | FLAG_WINDOW_HIGHDPI);
-//	SetWindowMinSize(MIN_WIDTH, MIN_HEIGHT);		Crashes on windows, does not work on linux	
 	InitWindow(START_WIDTH, START_HEIGHT, APP_NAME);
 	InitAudioDevice();
 
+	SetWindowMinSize(MIN_WIDTH, MIN_HEIGHT);		// TODO Crashes on windows i think
 	int refresh_rate = GetMonitorRefreshRate(GetCurrentMonitor());
 	refresh_rate = refresh_rate == 0 ? 60 : refresh_rate;
 	printf("Rendering at %dfps\n", refresh_rate);
 	SetTargetFPS(refresh_rate);
+	
 	GuiLoadStyle(STYLE);
+	GuiSetStyle(DEFAULT, TEXT_SIZE, 16);
+	GuiSetStyle(DEFAULT, TEXT_PADDING, 10);
 	//GuiLoadStyle("assets/dark.rgs");
 	Font fontBm = LoadFontEx("fonts/UbuntuSansNerdFont-Bold.ttf", 36, 0, 250);
 	Font font = LoadFontEx("fonts/MplusCodeLatin60-Bold.ttf", 36, 0, 250);
-	GuiSetFont(fontBm);
+	GuiSetFont(font);
 	FilePathList files = LoadDirectoryFiles(SONG_FOLDER);
 	Music current_song = {0}; 
 	
@@ -130,6 +133,7 @@ int main() {
 		BeginDrawing();
 		width = GetScreenWidth();
 		height = GetScreenHeight();
+		/* shouldn't be important anymore
 		if (width < MIN_WIDTH)												// Enforce Minimum Window size
 			width = MIN_WIDTH;
 
@@ -137,7 +141,7 @@ int main() {
 			height = MIN_HEIGHT;
 
 		SetWindowSize(width, height);
-
+		*/
 
 		ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 		GuiPanel((Rectangle) {0, 0, width, 70}, "RPlayer");									// TopPanel

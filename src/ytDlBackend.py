@@ -1,10 +1,10 @@
 
-PLAYLIST_PATH = "./playlists/"
-SONG_PATH = "./songs2/"
+PLAYLIST_PATH = "../playlists/"
+SONG_PATH = "../songs/"
 
 
 class Song:
-    def __init__(self, song_id, artist, title):
+    def __init__(self, song_id, title, artist):
         self.title = title
         self.artist = artist
         self.id = song_id
@@ -51,13 +51,10 @@ class Playlist:
     songs = SongCollection()
 
     def from_file(self, playlist_name):
-        ids = []
         with open(PLAYLIST_PATH + playlist_name + ".pl") as f:
-            for _ in f:
-                id_ = f.readline().strip()
-                if id_ != "":
-                    ids.append(id_)
+            ids = f.read().split("\n")
 
+        assert ids
         for id_ in ids:
             self.songs.col.append(Song(id_, None, None))
 
@@ -82,6 +79,6 @@ if __name__ == "__main__":
     songs.from_default()
     #print(songs)
     p = Playlist()
-    p.from_file("Neue Playlist")
+    p.from_file("Overnight")
     p.fetch_info(songs)
     print(p)
