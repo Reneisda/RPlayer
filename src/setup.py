@@ -20,7 +20,7 @@ def install():
 
 def read_config():
     conf = cfg.Config(CONFIG_PATH_FULL)
-    print(conf)
+    return conf.conf
 
 
 def create_config():
