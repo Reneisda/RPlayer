@@ -82,11 +82,11 @@ int main() {
 	SetTargetFPS(refresh_rate);
 	
 	GuiLoadStyle(STYLE);
-	GuiSetStyle(DEFAULT, TEXT_SIZE, 16);
+	GuiSetStyle(DEFAULT, TEXT_SIZE, 18);
 	GuiSetStyle(DEFAULT, TEXT_PADDING, 10);
 	//GuiLoadStyle("assets/dark.rgs");
-	Font fontBm = LoadFontEx("fonts/UbuntuSansNerdFont-Bold.ttf", 36, 0, 250);
-	Font font = LoadFontEx("fonts/MplusCodeLatin60-Bold.ttf", 36, 0, 250);
+	//	Font fontBm = LoadFontEx("fonts/UbuntuSansNerdFont-Bold.ttf", 36, 0, 250);
+	Font font = LoadFontEx("fonts/MplusCodeLatin60-Bold.ttf", 18, 0, 250);
 	GuiSetFont(font);
 	FilePathList files = LoadDirectoryFiles(SONG_FOLDER);
 	Music current_song = {0}; 
