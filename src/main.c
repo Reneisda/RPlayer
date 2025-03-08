@@ -6,9 +6,11 @@
 #include <stdint.h>
 #include "songutils.h"
 #include <string.h>
+#include <stdlib.h>
 #include <malloc.h>
 #include <math.h>
 #include "paths.h"
+#include "utils.h"
 
 
 #ifdef linux
@@ -25,9 +27,9 @@
 #define START_HEIGHT 680
 #define MIN_WIDTH 800
 #define MIN_HEIGHT 600
-#define STYLE "assets/style_def.rgs"
-
-//int GuiScrollBar(Rectangle rec, int scroll, int min, int max);
+#define STYLE "styles/style_def.rgs"
+#define ASSETS "assets/"
+#define FONTS "fonts/"
 
 typedef struct timestamp {
 	uint8_t hours;
@@ -70,6 +72,7 @@ int main() {
 	int height, width;
 	uint8_t seeking = 2;
 	char search[256];
+	SetTraceLogLevel(LOG_ALL);
 	memset(search, 0, 256);
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT | FLAG_WINDOW_HIGHDPI);
 	InitWindow(START_WIDTH, START_HEIGHT, APP_NAME);
@@ -84,13 +87,28 @@ int main() {
 	GuiLoadStyle(STYLE);
 	GuiSetStyle(DEFAULT, TEXT_SIZE, 18);
 	GuiSetStyle(DEFAULT, TEXT_PADDING, 10);
-	//GuiLoadStyle("assets/dark.rgs");
-	//	Font fontBm = LoadFontEx("fonts/UbuntuSansNerdFont-Bold.ttf", 36, 0, 250);
-	Font font = LoadFontEx("fonts/MplusCodeLatin60-Bold.ttf", 18, 0, 250);
+	// GuiLoadStyle("assets/dark.rgs");
+	int codepoints[255 + (0x9faf - 0x3000)];
+	// generating codepoints for ascii
+	int i = 0;
+	for (i = 0; i < 255; ++i)
+		codepoints[i] = i;
+
+	// generating codepoints for kanji
+	for (int c = 0x3000; c < 0x9faf; ++c)
+		codepoints[i++] = c;
+
+	Font font = LoadFontEx("fonts/MPLUS1-Bold.ttf", 18, codepoints, 255 + (0x9faf - 0x3000));
+		
+	// Font font = LoadFontEx("fonts/MPLUS1-Bold.ttf", 18, codepoints, 6);
 	GuiSetFont(font);
-	FilePathList files = LoadDirectoryFiles(SONG_FOLDER);
+	config_t* config = utils_read_config();
+	char songs_dir[2048];
+	snprintf(songs_dir, sizeof(songs_dir), "%s%s", config->base_dir, SONG_DIR);
+	FilePathList files = LoadDirectoryFiles(songs_dir);
+
 	Music current_song = {0}; 
-	
+	uint8_t is_playing = 0;	
 	float current_song_len = 0;
 	float current_song_pos = 0;
 	float current_slider_pos = 0;
@@ -99,61 +117,70 @@ int main() {
 	
 	timestamp_set(&cur_timestamp, 0.f);
 	timestamp_set(&end_timestamp, 0.f);
+
 	float volume = 0.2;
 	SetMasterVolume(volume_function(volume));
 
 	int scroll = 0; 
 	int cur_playlist_size = files.count;
 	// read all Playlists
-	FilePathList playlists_files = LoadDirectoryFiles(PLAYLISTS_FOLDER);
+	char playlists_files_dir[2048];
+	snprintf(playlists_files_dir, sizeof(playlists_files_dir), "%s%s", config->base_dir, PLAYLISTS_DIR);
+	printf("LOADING PLAYLISTS FROM: [>%s<]\n", playlists_files_dir);;
+	FilePathList playlists_files = LoadDirectoryFiles(playlists_files_dir);
+
 	playlist_t* playlists;
 	uint32_t playlist_count = playlists_files.count;
 	playlists = (playlist_t*) malloc(sizeof(playlist_t) * playlist_count);
 	playlist_t all_songs;
 	playlist_t* cur_pl;
 	song_list_t sl;
-	read_songs(&sl);
+
+	read_songs(&sl, config->base_dir);
+	printf("found %d songs\n", sl.count);
+	for (int i = i; i < sl.count; ++i) {
+		printf("Songs from Songlist: %s %s\n", sl.songs[i].id, sl.songs[i].name);
+	}
+
+	all_songs.count = sl.count;
+	all_songs.songs = &sl.songs;
+	strcpy(all_songs.name, "All Songs");
+
 	for (uint32_t i = 0; i < playlist_count; ++i) {
-		char playlist_name[1024];
-		strcpy(playlist_name, get_file_name(playlists_files.paths[i]));
-		playlist_name[strlen(playlist_name) - 3] = 0;
-		printf("playlistName: %s\n", playlist_name);
-		load_playlist(&playlists[i], &sl, playlist_name);
+		char playlist_file_name[2048];
+		strcpy(playlist_file_name, get_file_name(playlists_files.paths[i]));
+		printf("RAW_FILENAME: %s\n", playlist_file_name);
+		playlist_file_name[strlen(playlist_file_name) - (sizeof(PLAYLIST_FILE_SUFFIX) - 1)] = 0;
+		printf("playlistName: %s\n", playlist_file_name);
+		load_playlist(&playlists[i], &sl, playlist_file_name, config->base_dir);
 	}
 	
 	cur_pl = &playlists[0];		// TODO make this better
 	song_t* cur_song;
-	char def_thumb_path[256];
-	strcpy(def_thumb_path, THUMBNAIL_FOLDER);
-	strcat(def_thumb_path, cur_pl->songs[0]->id);
-	strcat(def_thumb_path, ".jpg");
+	char def_thumb_path[2048];
+	printf("Using Thumbnail_dir: %s%s%s%s\n", config->base_dir, THUMBNAIL_DIR, cur_pl->songs[0]->id, ".jpg");
+	snprintf(def_thumb_path, sizeof(def_thumb_path), "%s%s%s%s", config->base_dir, THUMBNAIL_DIR, cur_pl->songs[0]->id, ".jpg");
+	// Preloading textures
 	Texture backgound_texture = LoadTexture(def_thumb_path);
+	Texture txt_playing = LoadTexture(ASSETS "btn_pause_30.png");
+	Texture txt_paused = LoadTexture(ASSETS "btn_play_30.png");
 
 	while (!WindowShouldClose()) {
 		BeginDrawing();
 		width = GetScreenWidth();
 		height = GetScreenHeight();
-		/* shouldn't be important anymore
-		if (width < MIN_WIDTH)												// Enforce Minimum Window size
-			width = MIN_WIDTH;
-
-		if (height < MIN_HEIGHT)
-			height = MIN_HEIGHT;
-
-		SetWindowSize(width, height);
-		*/
+		is_playing = IsMusicStreamPlaying(current_song);
 
 		ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 		GuiPanel((Rectangle) {0, 0, width, 70}, "RPlayer");									// TopPanel
 		GuiPanel((Rectangle) {0, 80, 260, height - 300}, "Playlists");						// Sidepanel
 		GuiPanel((Rectangle) {270, 80, (width - 270 * 2), height - 190}, "Songs");			// SongPanel
-		GuiTextBox((Rectangle) {270, 30, width - 270 * 2, 25}, search, 256, true);			// SearchBar
+		GuiTextBox((Rectangle) {270, 30, width - 270 * 2, 25}, search, 256, 1);				// SearchBar
 		GuiScrollBar((Rectangle) {width - 265, 80, 10, height - 190}, scroll, 0, cur_playlist_size * 10);
 		DrawText("Search: ", 180, 34, 20, GetColor(0xFFFFFFFF));							// Searchbar Text 
 		if (GuiSliderBar((Rectangle) {width - 200, height - 55, 160, 7}, "", "", &volume, 0, 1)) 	// VolumeBar
 			SetMasterVolume(volume_function(volume));
-		
-		
+
 		float scroll_wheel = GetMouseWheelMove();
 		if (scroll_wheel < 0 && (scroll / 10) < cur_pl->count - 1)						// scroll songs
 			scroll += 10;
@@ -170,24 +197,27 @@ int main() {
 			}
 		}
 
+		if (GuiButton((Rectangle) {5, 110, 250, 50}, "All Songs")) {	
+				scroll = 0;
+				cur_pl = &all_songs;
+		}	
+
 		for (size_t i = 0; i < playlists_files.count; ++i) {
-			if (GuiButton((Rectangle) {5, 110 + i * 50, 250, 50}, playlists[i].name)) {	
+			if (GuiButton((Rectangle) {5, 160 + i * 50, 250, 50}, playlists[i].name)) {	
 				scroll = 0;
 				cur_pl = &playlists[i];
 			}	
-			//DrawText(playlists[i].name,	15, 120 + i * 50, 18, WHITE);
 		}
-
-		char s_name[256 + 10];
+		char s_name[2048];
 		cur_playlist_size = cur_pl->count;
 		for (size_t i = 0; i + scroll / 10 < cur_pl->count; ++i) {	
 			if (110 + i * 45 + 40 > height - 120)
 				break;
-
+			
 			if (GuiButton((Rectangle) {280, 110 + i * 45, width - 280 * 2 , 40} , cur_pl->songs[i + scroll / 10]->name)) {
-				strcpy(s_name, SONG_FOLDER);
-				strcat(s_name, cur_pl->songs[i + scroll / 10]->id);
-				strcat(s_name, ".wav");
+				printf("AudioPath: %s%s%s%s", config->base_dir, SONG_DIR, cur_pl->songs[i + scroll / 10]->id, ".mp3");
+
+				snprintf(s_name, sizeof(s_name), "%s%s%s%s", config->base_dir, SONG_DIR, cur_pl->songs[i + scroll / 10]->id, ".mp3");
 				if (access(s_name, F_OK) != 0)
 					continue;
 					
@@ -197,10 +227,8 @@ int main() {
 				current_song_len = GetMusicTimeLength(current_song);
 				timestamp_set(&end_timestamp, current_song_len);
 				// render backgound_texture
-				char thumbnail_path[256 + 10];
-				strcpy(thumbnail_path, THUMBNAIL_FOLDER);
-				strcat(thumbnail_path, cur_song->id);
-				strcat(thumbnail_path, ".jpg");
+				char thumbnail_path[2048];
+				snprintf(thumbnail_path, sizeof(thumbnail_path), "%s%s%s%s", config->base_dir, THUMBNAIL_DIR, cur_song->id, ".jpg");
 				backgound_texture = LoadTexture(thumbnail_path);
 			}
 			//DrawTextEx(font, cur_pl->songs[i + scroll / 10]->name,	(Vector2) {280, 110 + i * 45}, 25, 1, WHITE);
@@ -222,7 +250,7 @@ int main() {
 		timestamp_get(&cur_timestamp, timestamp_cur_str);
 		timestamp_get(&end_timestamp, timestamp_end_str);
 		// Song-ProgressBar
-		if (GuiSliderBar((Rectangle) {(int) (width / 4), height - 60, (int) (width / 2), 10},
+		if (GuiSliderBar((Rectangle) {(int) (width / 4), height - 30, (int) (width / 2), 10},
 				timestamp_cur_str, timestamp_end_str, &current_slider_pos, 0, current_song_len)) {
 			
 			seeking = 2;
@@ -241,6 +269,33 @@ int main() {
 		}
 		else if (seeking > 1) {
 			--seeking;
+		}
+		// Play Button
+		if (GuiButton((Rectangle) {(int) (width / 2) - 15, height - 75, 30, 30}, "")) {
+			if (is_playing)
+				PauseMusicStream(current_song);
+			else
+				ResumeMusicStream(current_song);
+		}
+
+		// skip Button
+		if (GuiButton((Rectangle) {(int) (width / 2) + 50 - 15, height - 75, 30, 30}, "")) {
+			;	
+		}
+		// back Button
+		if (GuiButton((Rectangle) {(int) (width / 2) - 50 - 15, height - 75, 30, 30}, "")) {
+			;	
+		}
+		// TODO implement textures or icons
+		
+		if (is_playing)
+			DrawTexture(txt_playing, (int) (width / 2) - 15, height - 75, WHITE);
+		else
+			DrawTexture(txt_paused, (int) (width / 2) - 15, height - 75, WHITE);
+		
+		// Add Playlist Button
+		if (GuiButton((Rectangle){231, 81, 20, 20}, "")) {
+			printf("adding new Playlist\n");
 		}
 
 		EndDrawing();

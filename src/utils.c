@@ -17,6 +17,18 @@
 #endif
 
 
+char *strremove(char *str, const char *sub) {
+    size_t len = strlen(sub);
+    if (len > 0) {
+        char *p = str;
+        while ((p = strstr(p, sub)) != NULL) {
+            memmove(p, p + len, strlen(p + len) + 1);
+        }
+    }
+    return str;
+}
+
+
 char* utils_read_whole_file(const char* filepath) {
 	if (access(filepath, F_OK) != 0) {
 		return NULL;
@@ -79,15 +91,22 @@ config_t* utils_read_config() {
 		char* start = strstr(end_ptr, ":") + 1;
 		end_ptr = strstr(buffer, "\n");
 		if (end_ptr != NULL)
-			*(end_ptr + 1) = 0;
-	
-		strcpy(cfg->music_path, start);
+			*end_ptr = 0;
+		
+		strremove(start, "\n");
+		strremove(start, "\r");
+		strremove(start, " ");
+
+		printf("read path: >%s<\n", start);	
+		strcpy(cfg->base_dir, start);
+		*end_ptr = '\n';
 	}
 	free(buffer);
 	return cfg;
 }
 
-float utils_get_volume() {
-	return 0.f;
+float utils_get_volume(config_t* config) {
+	return config->volume;
 }
+
 

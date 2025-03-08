@@ -1,23 +1,21 @@
 import yt_dlp
 from os import listdir
 from os.path import isfile, join
-import os
-import PIL as Image
 
-
-thumbnails_folder = "thumbnails"
 import os
 from PIL import Image
 
+basedir = "/home/rene/projects/c/music-player"
+thumbnails_folder = os.path.abspath(os.path.join(basedir, "thumbnails"))
+songs_folder = os.path.abspath(os.path.join(basedir, "songs"))
 
-def convert_thumbnails(folder):
-    thumbnails_folder = os.path.abspath(os.path.join(folder, "..", "thumbnails"))
+def convert_thumbnails():
     os.makedirs(thumbnails_folder, exist_ok=True)
 
     # Loop through all files in the folder
-    for file in os.listdir(folder):
+    for file in os.listdir(songs_folder):
         if file.endswith(".webp"):
-            webp_path = os.path.join(folder, file)
+            webp_path = os.path.join(songs_folder, file)
             jpg_filename = os.path.splitext(file)[0] + ".jpg"
             jpg_path = os.path.join(thumbnails_folder, jpg_filename)
 
@@ -34,14 +32,20 @@ def convert_thumbnails(folder):
                 print(f"Failed to convert {file}: {e}")
 
 
-def download_playlist_as_wav(playlist_url, cookies_file=None, output_folder="songs"):
+    print("Moving missing files")
+    for file in os.listdir(songs_folder):
+        if file.endswith(".jpg"):
+            os.rename(os.path.join(songs_folder, file), os.path.join(thumbnails_folder, file))
+
+
+def download_playlist_as_m4a(playlist_url, cookies_file=None, output_folder="../songs"):
     ydl_opts = {
         "format": "bestaudio/best",  # Get best audio format
         "outtmpl": f"{output_folder}/%(id)s.%(ext)s",  # Save file as video_id
         "postprocessors": [
             {
                 "key": "FFmpegExtractAudio",
-                "preferredcodec": "wav",  # Convert to WAV
+                "preferredcodec": "m4a",  # Convert to WAV
                 "preferredquality": "192",  # Audio quality
             }
         ],
@@ -49,7 +53,7 @@ def download_playlist_as_wav(playlist_url, cookies_file=None, output_folder="son
         "outtmpl_thumbnail": f"../{thumbnails_folder}/%(id)s.%(ext)s",
         "quiet": False,  # Show progress
         "ignoreerrors": True,  # Skip unavailable videos
-        "extract_flat": False,  # Ensure full playlist extraction
+        "extract_flat": False,
     }
 
     if cookies_file:
@@ -64,7 +68,7 @@ def download_playlist_as_wav(playlist_url, cookies_file=None, output_folder="son
 
     video_ids = [video["id"] for video in info["entries"] if "id" in video]
 
-    playlist_ids_file = os.path.join("playlists", info["title"] + ".pl")
+    playlist_ids_file = os.path.join("..", "playlists", info["title"] + ".pl")
     with open(playlist_ids_file, "w") as f:
         f.write("\n".join(video_ids))
 
@@ -92,7 +96,7 @@ def write_playlist_info(playlist_url):
         videos = info["entries"]
         pl_title = info["title"]
         data = pl_title + "\n"
-        with open(f"playlists/{pl_title}.pl", "w") as pl_file:
+        with open(f"../playlists/{pl_title}.pl", "w") as pl_file:
             for video in videos:
                 data += video.get("id", "Unknown") + "\n"
                 data += video.get("title", "Unknown") + "\n"
@@ -103,8 +107,8 @@ def write_playlist_info(playlist_url):
 
 def update_meta_data():
     songs = []
-    if os.path.exists("songs/info.pl"):
-        with open("songs/info.pl", "r") as song_info:
+    if os.path.exists("../songs/info.pl"):
+        with open("../songs/info.pl", "r") as song_info:
             songs = song_info.read().split("\n")
 
     i = 0
@@ -118,7 +122,7 @@ def update_meta_data():
             }
     
     files = [f for f in listdir("songs") if isfile(join("songs", f))]
-    info_file = open("songs/info.pl", "a")
+    info_file = open("../songs/info.pl", "a")
     counter = 0
     for file in files:
         file = file[:-4]
@@ -136,12 +140,14 @@ def update_meta_data():
             info_file.write(f'{info["title"]}\n')
             info_file.write(f'{info["uploader"]}\n')
 
-    info_file.close() 
+    info_file.close()
     print(f"Updated {counter} songs")
 
 
-playlist_url = "https://www.youtube.com/playlist?list=OLAK5uy_mTVjCbTPFRuHHlP1IS2fo_1sQNBWK1ciY"
-download_playlist_as_wav(playlist_url, output_folder="songs/")
-convert_thumbnails("songs")
-update_meta_data()
+
+if __name__ == "__main__":
+    playlist_url_ = "https://www.youtube.com/playlist?list=OLAK5uy_mTVjCbTPFRuHHlP1IS2fo_1sQNBWK1ciY"
+    #download_playlist_as_m4a(playlist_url_, output_folder="songs/")
+    convert_thumbnails()
+    update_meta_data()
 

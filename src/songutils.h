@@ -10,8 +10,8 @@
 #endif
 
 typedef struct song {
-	char name[256 * 10];
-	char artist[256];
+	char name[512];
+	char artist[512];
 	char id[12];
 	uint64_t id_n;
 } song_t;
@@ -20,7 +20,7 @@ typedef struct song {
 typedef struct playlist {
 	size_t count;
 	song_t** songs;
-	char name[256];
+	char name[512];
 } playlist_t;
 
 typedef struct song_list {
@@ -29,9 +29,9 @@ typedef struct song_list {
 } song_list_t;
 
 
-uint8_t read_songs(song_list_t* songs);
+uint8_t read_songs(song_list_t* songs, const char* base_dir);
 void print_songs(song_list_t* songs);
 song_t* get_song(const song_list_t* sl, const char* id);
-uint8_t load_playlist(playlist_t* pl, const song_list_t* sl, const char* name);
+uint8_t load_playlist(playlist_t* pl, const song_list_t* sl, const char* name, const char* base_dir);
 void print_playlist(playlist_t* pl);
 
