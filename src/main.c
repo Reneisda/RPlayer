@@ -90,6 +90,7 @@ int main() {
 	refresh_rate = refresh_rate == 0 ? 60 : refresh_rate;
 	printf("Rendering at %dfps\n", refresh_rate);
 	SetTargetFPS(refresh_rate);
+	SetExitKey(0);
 	
 	GuiLoadStyle(STYLE);
 	GuiSetStyle(DEFAULT, TEXT_SIZE, 18);
