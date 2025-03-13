@@ -71,7 +71,14 @@ float volume_function(float f) {
 int main() {
 	int height, width;
 	uint8_t seeking = 2;
+	uint8_t adding_playlist_toggle = 0;
+	uint8_t is_playing = 0;	
+	float current_song_len = 0;
+	float current_song_pos = 0;
+	float current_slider_pos = 0;
+
 	char search[256];
+
 	SetTraceLogLevel(LOG_ALL);
 	memset(search, 0, 256);
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT | FLAG_WINDOW_HIGHDPI);
@@ -108,10 +115,6 @@ int main() {
 	FilePathList files = LoadDirectoryFiles(songs_dir);
 
 	Music current_song = {0}; 
-	uint8_t is_playing = 0;	
-	float current_song_len = 0;
-	float current_song_pos = 0;
-	float current_slider_pos = 0;
 	timestamp_t cur_timestamp = {.hours = 0, .mins = 0, .secs = 0};
 	timestamp_t end_timestamp = {.hours = 0, .mins = 0, .secs = 0};
 	
@@ -126,7 +129,7 @@ int main() {
 	// read all Playlists
 	char playlists_files_dir[2048];
 	snprintf(playlists_files_dir, sizeof(playlists_files_dir), "%s%s", config->base_dir, PLAYLISTS_DIR);
-	printf("LOADING PLAYLISTS FROM: [>%s<]\n", playlists_files_dir);;
+	printf("LOADING PLAYLISTS FROM: [>%s<]\n", playlists_files_dir);
 	FilePathList playlists_files = LoadDirectoryFiles(playlists_files_dir);
 
 	playlist_t* playlists;
@@ -145,7 +148,7 @@ int main() {
 	all_songs.count = sl.count;
 	all_songs.songs = &sl.songs;
 	strcpy(all_songs.name, "All Songs");
-
+	
 	for (uint32_t i = 0; i < playlist_count; ++i) {
 		char playlist_file_name[2048];
 		strcpy(playlist_file_name, get_file_name(playlists_files.paths[i]));
@@ -197,18 +200,19 @@ int main() {
 			}
 		}
 
-		if (GuiButton((Rectangle) {5, 110, 250, 50}, "All Songs")) {	
+		if (GuiButton((Rectangle) {5, 135, 250, 50}, "All Songs")) {	
 				scroll = 0;
 				cur_pl = &all_songs;
 		}	
-
+		// list playlists
 		for (size_t i = 0; i < playlists_files.count; ++i) {
-			if (GuiButton((Rectangle) {5, 160 + i * 50, 250, 50}, playlists[i].name)) {	
+			if (GuiButton((Rectangle) {5, 190 + i * 55, 250, 50}, playlists[i].name)) {	
 				scroll = 0;
 				cur_pl = &playlists[i];
 			}	
 		}
 		char s_name[2048];
+		// list songs
 		cur_playlist_size = cur_pl->count;
 		for (size_t i = 0; i + scroll / 10 < cur_pl->count; ++i) {	
 			if (110 + i * 45 + 40 > height - 120)
@@ -294,10 +298,12 @@ int main() {
 			DrawTexture(txt_paused, (int) (width / 2) - 15, height - 75, WHITE);
 		
 		// Add Playlist Button
-		if (GuiButton((Rectangle){231, 81, 20, 20}, "")) {
+		if (GuiButton((Rectangle){5, 110, 40, 20}, "+")) {
 			printf("adding new Playlist\n");
+			uint8_t adding_playlist_toggle = 1;
 		}
-
+		
+		if (adding_playlist_toggle) {
 		EndDrawing();
 	}
 
