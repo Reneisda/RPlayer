@@ -74,6 +74,8 @@ int main() {
 	float current_song_len = 0;
 	float current_song_pos = 0;
 	float current_slider_pos = 0;
+	char* current_song_name[255];
+	current_song_name[0] = 0;
 
 	char search[256];
 
@@ -159,6 +161,7 @@ int main() {
 		printf("playlistName: %s\n", playlist_file_name);
 		load_playlist(&playlists[i], &sl, playlist_file_name, config->base_dir);
 	}
+
 	
 	// Preloading textures
 	Texture backgound_texture;
@@ -166,6 +169,7 @@ int main() {
 	Texture txt_paused = LoadTexture(ASSETS "btn_play_30.png");
 
 	song_t* cur_song;
+	cur_song = NULL;
 	if (playlists->count > 0) {
 		cur_pl = &playlists[0];		// TODO make this better
 		char def_thumb_path[2048];
@@ -212,8 +216,8 @@ int main() {
 		}
 
 		if (GuiButton((Rectangle) {5, 135, 250, 50}, "All Songs")) {
-				scroll = 0;
-				cur_pl = &all_songs;
+			scroll = 0;
+			cur_pl = &all_songs;
 		}	
 		// list playlists
 		for (size_t i = 0; i < playlists_files.count; ++i) {
@@ -223,14 +227,13 @@ int main() {
 			}	
 		}
 		char s_name[2048];
-		cur_playlist_size = cur_pl->count;
 		for (size_t i = 0; i + scroll / 10 < cur_pl->count; ++i) {	
 			if (110 + i * 45 + 40 > height - 120)
 				break;
 			
 			if (GuiButton((Rectangle) {280, 110 + i * 45, width - 280 * 2 , 40} , cur_pl->songs[i + scroll / 10]->name)) {
 				printf("AudioPath: %s%s%s%s", config->base_dir, SONG_DIR, cur_pl->songs[i + scroll / 10]->id, ".mp3");
-
+				
 				snprintf(s_name, sizeof(s_name), "%s%s%s%s", config->base_dir, SONG_DIR, cur_pl->songs[i + scroll / 10]->id, ".mp3");
 				if (access(s_name, F_OK) != 0)
 					continue;
@@ -314,6 +317,12 @@ int main() {
 		}
 
 		if (adding_playlist_toggle) {
+			;
+		}
+		if (cur_song != NULL) {
+			GuiLabel(CLITERAL(Rectangle) {20, height - 60, 250, 20}, cur_song->name);
+			GuiLabel(CLITERAL(Rectangle) {20, height - 40, 250, 20}, cur_song->artist);
+		}
 		EndDrawing();
 	}
 
