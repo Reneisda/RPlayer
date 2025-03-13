@@ -17,10 +17,10 @@
 #endif
 
 
-char *strremove(char *str, const char *sub) {
+char* strremove(char* str, const char* sub) {
     size_t len = strlen(sub);
     if (len > 0) {
-        char *p = str;
+        char* p = str;
         while ((p = strstr(p, sub)) != NULL) {
             memmove(p, p + len, strlen(p + len) + 1);
         }
@@ -61,7 +61,7 @@ char* utils_read_whole_file(const char* filepath) {
 
 
 config_t* utils_read_config() {
-	const char *homedir;
+	const char* homedir;
 	if ((homedir = getenv("HOME")) == NULL) {
 	    homedir = getpwuid(getuid())->pw_dir;
 	}
@@ -79,6 +79,9 @@ config_t* utils_read_config() {
 
 	strcat(config_path, CONFIG_PATH); 
 	char* buffer = utils_read_whole_file(config_path);
+	if (buffer == NULL)
+		return NULL;
+
 	char* end_ptr;
 	end_ptr = strstr(buffer, "volume: ");
 	if (end_ptr != NULL) {

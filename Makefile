@@ -8,6 +8,9 @@ all:
 run: all
 	./player
 
+clean:
+	rm -rf player __pycache__ src/__pycache__
+
 build-win: main.c songutils.c Makefile
 	$(wincc) -o rplayer.exe main.c songutils.c \
     -I./\

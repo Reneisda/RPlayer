@@ -187,13 +187,17 @@ def check_thumbnails(base_dir : str):
 
     print("Fixing Done!")
 
-
+# checks and fixes playlist. Removes songs that failed to download
 def check_playlist(pl_id: str, base_dir : str):
-    pass
+    with open(p.join(base_dir, "playlists", pl_id + ".playlist"), "r") as f:
+        current_ids = f.read().replace("\r", "").split("\n")
+
+    songs = os.listdir(os.join(base_dir, "songs"))
+    songs.remove("song.info")
+    print(songs)
 
 
 def update_playlist(pl_id: str, base_dir : str):
-    current_ids = []
     with open(p.join(base_dir, "playlists", pl_id + ".playlist"), "r") as f:
         current_ids = f.read().replace("\r", "").split("\n")
 
@@ -272,6 +276,6 @@ if __name__ == "__main__":
     CONFIG_FILE_NAME = "rplayer.conf"
     CONFIG_PATH_FULL = p.join(CONFIG_PATH, CONFIG_FILE_NAME)
     cfg = Config(CONFIG_PATH_FULL)
-
+    check_playlist(cfg.path, "PLATB9XS5FOa4pwSRJ_zzrNU4aFxhKqzFp")
     #add_new_playlist("PLATB9XS5FOa4pwSRJ_zzrNU4aFxhKqzFp", BASE_DIR)
-    update_playlist("PLATB9XS5FOa4pwSRJ_zzrNU4aFxhKqzFp", BASE_DIR)
+    #update_playlist("PLATB9XS5FOa4pwSRJ_zzrNU4aFxhKqzFp", BASE_DIR)
