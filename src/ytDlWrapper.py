@@ -192,10 +192,15 @@ def check_playlist(pl_id: str, base_dir : str):
     with open(p.join(base_dir, "playlists", pl_id + ".playlist"), "r") as f:
         current_ids = f.read().replace("\r", "").split("\n")
 
-    songs = os.listdir(os.join(base_dir, "songs"))
-    songs.remove("song.info")
-    print(songs)
-
+    actual_songs = os.listdir(os.join(base_dir, "songs"))
+    actual_songs.remove("song.info")
+    print(actual_songs)
+    songs_in_list = SongCollection()
+    songs_in_list.from_file(os.path.join(base_dir, "songs", "song.info"))
+    for song in songs_in_list.songs:
+        if song.id not in current_ids:
+            songs_in_list.songs.remove(song)
+    
 
 def update_playlist(pl_id: str, base_dir : str):
     with open(p.join(base_dir, "playlists", pl_id + ".playlist"), "r") as f:
