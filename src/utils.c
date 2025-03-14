@@ -16,8 +16,10 @@
 #include <unistd.h>
 #endif
 
+#define PRE_ALLOCATED_LINES 255
+#define PRE_ALLOCATED_CHARS 255
 
-char* strremove(char* str, const char* sub) {
+static char* strremove(char* str, const char* sub) {
     size_t len = strlen(sub);
     if (len > 0) {
         char* p = str;
@@ -39,7 +41,7 @@ char* utils_read_whole_file(const char* filepath) {
         return NULL;
 
     fseek(file, 0L, SEEK_END);
-    int file_size = ftell(file);
+    uint32_t file_size = ftell(file);
     rewind(file);
 
     char *text = malloc(file_size + 1);
@@ -59,6 +61,49 @@ char* utils_read_whole_file(const char* filepath) {
     return text;   
 }
 
+lines_t* utils_read_lines(const char* filepath) {
+	char* data = utils_read_whole_file(filepath);
+	if (data == NULL) {
+		fprintf(stderr, "could not read file\n");
+		return NULL;
+	}
+
+	lines_t* lines_ = malloc(sizeof(lines_t));
+	lines_->lines = malloc(sizeof(char*) * PRE_ALLOCATED_LINES);
+
+	uint32_t current_line_count = 0;
+	uint32_t line_length = 0;
+	uint8_t line_beginn = 1;
+	char c;
+	
+	uint32_t length = strlen(data);
+	for (uint32_t i = 0; i < length; ++i) {
+		if (line_beginn) {
+			lines_->lines[current_line_count] = data + i;
+			line_beginn = 0;
+		}
+
+		if (current_line_count >= PRE_ALLOCATED_LINES) {
+			lines_->lines = realloc(lines_->lines, sizeof(char) * current_line_count * 2);
+			if (lines_->lines == NULL)
+				return NULL;
+		}		
+		if (data[i] != '\n') ++line_length;
+		else {
+			data[i] = 0;
+			++current_line_count;
+			lines_->lines = realloc(lines_->lines, ((data + i) - lines_->lines[i]) + 1);
+			if (lines_->lines == NULL)
+				return NULL;
+
+			memcpy(lines_->lines[current_line_count], lines_->lines[i], ((data + i) - lines_->lines[i]));
+		}
+	}
+	
+	lines_->count = current_line_count;
+	free(data);
+	return lines_;
+}
 
 config_t* utils_read_config() {
 	const char* homedir;
@@ -112,4 +157,12 @@ float utils_get_volume(config_t* config) {
 	return config->volume;
 }
 
+int main() {
+	lines_t* l = utils_read_lines("~/Music/rplayer/songs/songs.info");
+	if (l == NULL)
+		return 1;
+	for (int i = 0; i < l->count; ++i)
+		printf("%s\n", l->lines[i]);
 
+	return 0;
+}

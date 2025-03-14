@@ -58,14 +58,16 @@ class SongCollection:
 
 class Playlist:
     songs = SongCollection()
-
-    def from_file(self, playlist_name):
-        with open(PLAYLIST_PATH + playlist_name + ".playlist") as f:
+    name = None
+    def from_file(self, dir):
+        with open(dir) as f:
             ids = f.read().replace("\r", "").split("\n")
 
         assert ids
+        self.name = ids[0]
+        ids = ids[1:]
         for id_ in ids:
-            self.songs.col.append(Song(id_, None, None))
+            self.songs.col.append(Song(song_id=id_, title=None, artist=None))
 
     def fetch_info(self, song_collection : SongCollection):
         all_ids = [s.id for s in song_collection.col]
@@ -189,17 +191,33 @@ def check_thumbnails(base_dir : str):
 
 # checks and fixes playlist. Removes songs that failed to download
 def check_playlist(pl_id: str, base_dir : str):
-    with open(p.join(base_dir, "playlists", pl_id + ".playlist"), "r") as f:
-        current_ids = f.read().replace("\r", "").split("\n")
-
-    actual_songs = os.listdir(os.join(base_dir, "songs"))
-    actual_songs.remove("song.info")
-    print(actual_songs)
+    print("Checking playlists...")
     songs_in_list = SongCollection()
-    songs_in_list.from_file(os.path.join(base_dir, "songs", "song.info"))
-    for song in songs_in_list.songs:
-        if song.id not in current_ids:
-            songs_in_list.songs.remove(song)
+    songs_in_list.from_file(os.path.join(base_dir, "songs", "songs.info"))
+
+    playlist_dir = p.join(base_dir, "playlists", pl_id + ".playlist")
+
+    pl = Playlist()
+    pl.from_file(playlist_dir)
+    pl.fetch_info(songs_in_list)
+    actual_songs = os.listdir(os.path.join(base_dir, "songs"))
+    actual_songs.remove("songs.info")
+
+    print(f"Checking {pl.name}")
+    for i in range(len(actual_songs)):
+        actual_songs[i] = actual_songs[i][:-4]
+
+    print(actual_songs)
+
+    for song in pl.songs.col:
+        if song.id not in songs_in_list.col:
+            print(f"Removing: {song.id} because meta-data incomplete")
+            songs_in_list.col.remove(song)
+
+    for song in pl.songs.col:
+        if song.id not in actual_songs:
+            print(f"Removing: {song.id} because download failed.")
+            songs_in_list.col.remove(song)
     
 
 def update_playlist(pl_id: str, base_dir : str):
@@ -281,6 +299,6 @@ if __name__ == "__main__":
     CONFIG_FILE_NAME = "rplayer.conf"
     CONFIG_PATH_FULL = p.join(CONFIG_PATH, CONFIG_FILE_NAME)
     cfg = Config(CONFIG_PATH_FULL)
-    check_playlist(cfg.path, "PLATB9XS5FOa4pwSRJ_zzrNU4aFxhKqzFp")
+    check_playlist("PLF452AA85EDA3A598", cfg.conf["music_location"])
     #add_new_playlist("PLATB9XS5FOa4pwSRJ_zzrNU4aFxhKqzFp", BASE_DIR)
     #update_playlist("PLATB9XS5FOa4pwSRJ_zzrNU4aFxhKqzFp", BASE_DIR)
