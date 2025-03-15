@@ -763,6 +763,8 @@ RAYGUIAPI int GuiColorPickerHSV(Rectangle bounds, const char *text, Vector3 *col
 RAYGUIAPI int GuiColorPanelHSV(Rectangle bounds, const char *text, Vector3 *colorHsv);                 // Color Panel control that updates Hue-Saturation-Value color value, used by GuiColorPickerHSV()
 //----------------------------------------------------------------------------------------------------------
 
+static int GuiScrollBar(Rectangle bounds, int value, int minValue, int maxValue);
+
 #if !defined(RAYGUI_NO_ICONS)
 
 #if !defined(RAYGUI_CUSTOM_ICONS)

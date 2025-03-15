@@ -85,18 +85,24 @@ lines_t* utils_read_lines(const char* filepath) {
 
 		if (current_line_count >= PRE_ALLOCATED_LINES) {
 			lines_->lines = realloc(lines_->lines, sizeof(char) * current_line_count * 2);
-			if (lines_->lines == NULL)
+			if (lines_->lines == NULL) {
+				fprintf(stderr, "Reallocation failed!\n");
 				return NULL;
-		}		
+			}
+		}
+
 		if (data[i] != '\n') ++line_length;
 		else {
 			data[i] = 0;
 			++current_line_count;
-			lines_->lines = realloc(lines_->lines, ((data + i) - lines_->lines[i]) + 1);
-			if (lines_->lines == NULL)
+			lines_->lines = realloc(lines_->lines, line_length + 1);
+			if (lines_->lines == NULL) {
+				fprintf(stderr, "Rellocation failed!\n");
 				return NULL;
+			}
 
-			memcpy(lines_->lines[current_line_count], lines_->lines[i], ((data + i) - lines_->lines[i]));
+			memcpy(lines_->lines[current_line_count], lines_->lines[i], line_length);
+			line_length = 0;
 		}
 	}
 	
@@ -157,12 +163,17 @@ float utils_get_volume(config_t* config) {
 	return config->volume;
 }
 
+#ifdef __test
 int main() {
-	lines_t* l = utils_read_lines("~/Music/rplayer/songs/songs.info");
+	lines_t* l = utils_read_lines("/home/rene/Music/rplayer/songs/songs.info");
 	if (l == NULL)
 		return 1;
+
+	printf("Found %d lines\n", l->count);
+
 	for (int i = 0; i < l->count; ++i)
 		printf("%s\n", l->lines[i]);
 
 	return 0;
 }
+#endif
