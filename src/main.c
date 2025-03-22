@@ -13,6 +13,8 @@
 
 #ifdef linux
 #include <unistd.h>
+#define CLOG_IMPLEMENTATION
+#include "clog.h"				// Logger
 #endif
 #ifdef WIN32
 #include <io.h>
@@ -78,7 +80,6 @@ int main() {
 	current_song_name[0] = 0;
 
 	char search[256];
-
 	SetTraceLogLevel(LOG_ALL);
 	memset(search, 0, 256);
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT | FLAG_WINDOW_HIGHDPI);
@@ -88,9 +89,9 @@ int main() {
 	SetWindowMinSize(MIN_WIDTH, MIN_HEIGHT);		// TODO Crashes on windows i think
 	int refresh_rate = GetMonitorRefreshRate(GetCurrentMonitor());
 	refresh_rate = refresh_rate == 0 ? 60 : refresh_rate;
-	printf("Rendering at %dfps\n", refresh_rate);
+	clogf_extra("Rendering at %dfps\n", refresh_rate);
 	SetTargetFPS(refresh_rate);
-	SetExitKey(0);
+	SetExitKey(0);									// prevent window closing on pressing "esc"
 	
 	GuiLoadStyle(STYLE);
 	GuiSetStyle(DEFAULT, TEXT_SIZE, 18);
@@ -112,7 +113,7 @@ int main() {
 	GuiSetFont(font);
 	config_t* config = utils_read_config();
 	if (config == NULL) {
-		fprintf(stderr, "Could not open config file\n");
+		clog_error("Could not open config file\n");
 		exit(1);
 	}
 
@@ -128,6 +129,7 @@ int main() {
 		sl.songs = NULL;
 		sl.count = 0;
 	}
+
 	timestamp_set(&cur_timestamp, 0.f);
 	timestamp_set(&end_timestamp, 0.f);
 
@@ -136,7 +138,7 @@ int main() {
 	// read all Playlists
 	char playlists_files_dir[2048];
 	snprintf(playlists_files_dir, sizeof(playlists_files_dir), "%s%s", config->base_dir, PLAYLISTS_DIR);
-	printf("LOADING PLAYLISTS FROM: [>%s<]\n", playlists_files_dir);
+	clogf_info("Loading playlist from %s\n", playlists_files_dir);
 	FilePathList playlists_files = LoadDirectoryFiles(playlists_files_dir);
 
 	playlist_t* playlists;
@@ -146,9 +148,9 @@ int main() {
 	playlist_t* cur_pl;
 
 	read_songs(&sl, config->base_dir);
-	printf("found %d songs\n", sl.count);
+	clogf_info("found %d songs\n", sl.count);
 	for (int i = i; i < sl.count; ++i) {
-		printf("Songs from Songlist: %s %s\n", sl.songs[i].id, sl.songs[i].name);
+		clogf_info("Songs from Songlist: %s %s\n", sl.songs[i].id, sl.songs[i].name);
 	}
 
 	all_songs.count = sl.count;
@@ -159,7 +161,7 @@ int main() {
 		char playlist_file_name[2048];
 		strcpy(playlist_file_name, get_file_name(playlists_files.paths[i]));
 		playlist_file_name[strlen(playlist_file_name) - (sizeof(PLAYLIST_FILE_SUFFIX) - 1)] = 0;
-		printf("playlistName: %s\n", playlist_file_name);
+		clogf_info("playlistName: %s\n", playlist_file_name);
 		load_playlist(&playlists[i], &sl, playlist_file_name, config->base_dir);
 	}
 
@@ -174,7 +176,7 @@ int main() {
 	if (playlists->count > 0) {
 		cur_pl = &playlists[0];		// TODO make this better
 		char def_thumb_path[2048];
-		printf("Using Thumbnail_dir: %s%s%s%s\n", config->base_dir, THUMBNAIL_DIR, cur_pl->songs[0]->id, ".jpg");
+		clogf_info("Using Thumbnail_dir: %s%s%s%s\n", config->base_dir, THUMBNAIL_DIR, cur_pl->songs[0]->id, ".jpg");
 		snprintf(def_thumb_path, sizeof(def_thumb_path), "%s%s%s%s", config->base_dir,
 			THUMBNAIL_DIR, cur_pl->songs[0]->id, ".jpg");
 
@@ -233,7 +235,7 @@ int main() {
 				break;
 			
 			if (GuiButton((Rectangle) {280, 110 + i * 45, width - 280 * 2 , 40} , cur_pl->songs[i + scroll / 10]->name)) {
-				printf("AudioPath: %s%s%s%s", config->base_dir, SONG_DIR, cur_pl->songs[i + scroll / 10]->id, ".mp3");
+				clogf_info("AudioPath: %s%s%s%s\n", config->base_dir, SONG_DIR, cur_pl->songs[i + scroll / 10]->id, ".mp3");
 				
 				snprintf(s_name, sizeof(s_name), "%s%s%s%s", config->base_dir, SONG_DIR, cur_pl->songs[i + scroll / 10]->id, ".mp3");
 				if (access(s_name, F_OK) != 0)
@@ -288,6 +290,13 @@ int main() {
 		else if (seeking > 1) {
 			--seeking;
 		}
+		if (seeking == 1 && IsMouseButtonDown(0)) {
+			char seek_time_buffer[20];
+			timestamp_t seek_stamp;
+			timestamp_set(&seek_stamp, current_slider_pos);
+			timestamp_get(&seek_stamp, seek_time_buffer);
+			GuiLabel((Rectangle) {238, height - 60, 100, 20}, seek_time_buffer);
+		}
 		// Play Button
 		if (GuiButton((Rectangle) {(int) (width / 2) - 15, height - 75, 30, 30}, "")) {
 			if (is_playing)
@@ -313,7 +322,7 @@ int main() {
 		
 		// Add Playlist Button
 		if (GuiButton((Rectangle){5, 110, 40, 20}, "+")) {
-			printf("adding new Playlist\n");
+			clog_info("adding new Playlist");
 			uint8_t adding_playlist_toggle = 1;
 		}
 
@@ -324,6 +333,7 @@ int main() {
 			GuiLabel(CLITERAL(Rectangle) {20, height - 60, 250, 20}, cur_song->name);
 			GuiLabel(CLITERAL(Rectangle) {20, height - 40, 250, 20}, cur_song->artist);
 		}
+
 		EndDrawing();
 	}
 
