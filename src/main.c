@@ -259,9 +259,9 @@ int main() {
 				(Rectangle) {0, 0, width, height},
 				(Vector2) {0, 0},
 				0,
-				CLITERAL(Color){255, 255, 255, 40});
+				CLITERAL(Color){255, 255, 255, 60});
 
-		DrawRectangle(0, height - 100, width, 100, CLITERAL(Color){0, 0, 0, 95});
+		DrawRectangle(0, height - 100, width, 100, CLITERAL(Color){0, 0, 0, 70});
 				
 		current_song_pos = GetMusicTimePlayed(current_song);
 		timestamp_set(&cur_timestamp, current_song_pos);
